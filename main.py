@@ -289,7 +289,8 @@ async def close(self):
             self.driver.quit()
         if self.session:
             await self.session.close()
-#**FASTAPI CORE**
+            
+#FASTAPI CORE
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting application...")
