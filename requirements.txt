@@ -8,3 +8,5 @@ pydantic
 openai
 bs4
 asyncio
+selenium
+webdriver_manager
