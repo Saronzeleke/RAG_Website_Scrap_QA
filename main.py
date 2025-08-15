@@ -23,9 +23,7 @@ import re
 from setting import settings
 from db_manager import DatabaseManager
 from retrieval import RetrievalSystem, hybrid_retrieval
-from db_manager import query_all_db_content
-from db_manager import query_db_content
-# from robots import RobotFileParser 
+from db_manager import query_all_db_content,query_db_content
 from urllib.robotparser import RobotFileParser as BaseRobotParser
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
