@@ -22,9 +22,8 @@ import os
 import re
 from setting import settings
 from db_manager import DatabaseManager
-from retrival import RetrievalSystem
+from retrieval import RetrievalSystem, hybrid_retrieval
 from db_manager import query_all_db_content
-from retrival import hybrid_retrieval
 from db_manager import query_db_content
 # from robots import RobotFileParser 
 from urllib.robotparser import RobotFileParser as BaseRobotParser
