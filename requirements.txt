@@ -10,3 +10,5 @@ bs4
 asyncio
 selenium
 webdriver_manager
+fastapi
+aiohttp
