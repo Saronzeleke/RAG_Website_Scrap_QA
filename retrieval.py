@@ -5,7 +5,6 @@ from sentence_transformers import SentenceTransformer
 from setting import settings
 import logging
 import numpy as np
-import numpy as np
 from typing import List, Dict
 import logging
 from sentence_transformers import cross_encoder
