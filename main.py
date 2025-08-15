@@ -428,7 +428,7 @@ def _create_documents(scraped_pages: List[ScrapedPage], db_rows: List[Dict]) -> 
         })
     
     return documents
-print(f"First web doc: {documents[0]}")  
+    print(f"First web doc: {documents[0]}")  
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Shutting down...")
