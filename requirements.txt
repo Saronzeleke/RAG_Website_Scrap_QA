@@ -6,3 +6,5 @@ sentence_transformers
 numpy
 pydantic
 openai
+bs4
+asyncio
