@@ -12,3 +12,4 @@ selenium
 webdriver_manager
 fastapi
 aiohttp
+uvicorn
