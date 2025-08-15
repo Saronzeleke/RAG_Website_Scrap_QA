@@ -44,7 +44,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  
 app = FastAPI(title=" Ethiopian_qa")
-#**CONFIGURATION**
+#CONFIGURATION
 MAX_DEPTH = 50                    
 MAX_PAGES = 5000                   
 CRAWL_CONCURRENCY = 50             
@@ -53,7 +53,7 @@ SELENIUM_TIMEOUT = 45
 DYNAMIC_WAIT_TIME = 3             
 MIN_CONTENT_LENGTH = 200           
 
-#**MODELS**
+#MODELS
 
 class QueryRequest(BaseModel):
     question: str
@@ -64,7 +64,7 @@ class ScrapedPage(BaseModel):
     content: str
     depth: int
     is_dynamic: bool
-#**CORE SCRAPER ENGINE**
+#CORE SCRAPER ENGINE
 class WebScraper:
     def __init__(self):
         self.driver = None
