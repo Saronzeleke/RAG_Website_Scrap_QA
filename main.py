@@ -437,7 +437,7 @@ async def shutdown_event():
     await app.state.redis.close()
     logger.info("Clean shutdown complete")
 
-# **QA ENDPOINT**
+#QA ENDPOINT
 def _requires_list_answer(query: str) -> bool:
     """Enhanced list detection with query analysis"""
     list_phrases = [
