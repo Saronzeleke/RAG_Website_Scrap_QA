@@ -1,3 +1,5 @@
 streamlit
 aiomysql
 chromadb
+rank_bm25
+sentence_transformers
