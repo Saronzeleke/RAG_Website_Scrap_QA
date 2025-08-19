@@ -173,6 +173,11 @@ Start Server:
 uvicorn main:app --reload
 # Usage
 **Expected Logs**
+MySQL connection pool created
+Scraping: ~135 pages (~20 min, sitemap ~119 + BFS)
+DB load: ~223 records (~20 bravo_airport + ~203 others)
+Indexed ~358 documents (135 web + 223 DB)
+Application ready
 Start the Front-end Interface
 python app.py
 
