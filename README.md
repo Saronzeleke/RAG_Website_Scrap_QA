@@ -5,15 +5,27 @@ It combines document retrieval with generative models to answer user queries acc
 
 # Features
 
-Web Scraping: Extracts website content to build a knowledge base.
 
-Document Embedding: Converts scraped content into embeddings for efficient retrieval.
 
-Question Answering: Generates answers based on retrieved documents using a RAG model.
 
-Front-end Interface: app.py provides a user-facing interface for querying the system.
 
-Database Management: Handles storage and retrieval of embeddings efficiently.
+Web Scraping: Crawls ~135 pages from visitethiopia.et (sitemap ~119 + BFS extras, ~20 min) to extract tourism information (hotels, tours, cultural sites).
+
+
+
+Database Queries: Retrieves ~223 records from bravo_hotels, bravo_events, bravo_boats, bravo_tours, bravo_spaces, bravo_cars, and bravo_airport using FULLTEXT indexes.
+
+
+
+RAG Pipeline: Combines web and database data to answer queries via a /ask endpoint.
+
+
+
+Error Handling: Resolves database issues (e.g., missing description columns, invalid datetimes) for robust operation.
+
+
+
+Production-Ready: Optimized for performance with Redis caching and asynchronous MySQL queries (aiomysql).
 
 Installation
 Prerequisites
