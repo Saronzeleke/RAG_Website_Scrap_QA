@@ -75,12 +75,10 @@ cd RAG_Website_Scrap_QA
 # 2 Set Up Virtual Environment:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-# Install dependencies:
 
+# 3 Install dependencies:
 pip install -r requirements.txt
-
-
-Set environment variables in a .env file (API keys, database URLs, etc.)
+pip install httpx==0.27.2
 
 # Usage
 Start the Backend (main application)
