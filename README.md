@@ -67,12 +67,12 @@ Database: visitethiopia schema (from visitethiopia(13).sql)
 Clone Repository:
 Steps
 
-# Clone the repository:
+# 1 Clone the repository:
 
 git clone https://github.com/Saronzeleke/RAG_Website_Scrap_QA.git
 cd RAG_Website_Scrap_QA
 
-
+# 2 Set Up Virtual Environment:
 # Install dependencies:
 
 pip install -r requirements.txt
