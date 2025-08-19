@@ -172,18 +172,7 @@ Start Server:
 .venv\Scripts\Activate.ps1
 uvicorn main:app --reload
 # Usage
-Start the Backend (main application)
-python main.py
-
-
-This launches the backend API, which handles:
-
-Web scraping
-
-Document retrieval
-
-Question answering
-
+**Expected Logs**
 Start the Front-end Interface
 python app.py
 
