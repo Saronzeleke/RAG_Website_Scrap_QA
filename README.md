@@ -134,6 +134,33 @@ ALTER TABLE bravo_tours ADD description TEXT, ADD FULLTEXT(description);
 Issue: INSERT statements failed due to missing slug (ERROR 1364) and description in bravo_tours (ERROR 1054).
 Fix: Added 8 rows with slug and visitethiopia.et-inspired descriptions.
 SQL:
+USE visitethiopia;
+
+-- Hotels
+INSERT INTO bravo_hotels (id, title, slug, content, description, status, created_at, updated_at) VALUES
+(88, 'Sheraton Addis', 'sheraton-addis', 'Luxury hotel with premium amenities in Addis Ababa.', 'Located near Bole International Airport, perfect for stopovers with world-class dining and spa facilities.', 'publish', NOW(), NOW()),
+(89, 'Radisson Blu Addis Ababa', 'radisson-blu-addis-ababa', 'Modern hotel in the heart of the capital.', 'Ideal for stopover travelers, offering easy access to Addis Ababa’s cultural sites and airport proximity.', 'publish', NOW(), NOW());
+
+-- Events
+INSERT INTO bravo_events (id, title, slug, content, description, status, created_at, updated_at) VALUES
+(55, 'Ethiopia Tourism Vendor Expo', 'ethiopia-tourism-vendor-expo', 'Event for tourism businesses to join the industry.', 'Become a vendor: register at visitethiopia.et, submit your business license, and email info@visitethiopia.et for partnership opportunities.', 'publish', NOW(), NOW()),
+(56, 'Addis Tourism Workshop', 'addis-tourism-workshop', 'Training for new tourism vendors.', 'Join Ethiopia’s tourism sector: complete the online form at visitethiopia.et and attend our vendor training sessions.', 'publish', NOW(), NOW());
+
+-- Boats
+INSERT INTO bravo_boats (id, title, slug, content, description, status, created_at, updated_at) VALUES
+(21, 'Lake Tana Monastery Tour', 'lake-tana-monastery-tour', 'Boat tour visiting ancient monasteries.', 'Explore Lake Tana’s historic monasteries, perfect for a cultural stopover with scenic views.', 'publish', NOW(), NOW());
+
+-- Tours
+INSERT INTO bravo_tours (id, title, slug, content, description, status, created_at, updated_at) VALUES
+(78, 'Lalibela Rock-Hewn Churches Tour', 'lalibela-rock-hewn-churches-tour', 'Visit UNESCO-listed churches carved from rock.', 'Ideal for stopovers, this tour explores Lalibela’s ancient churches, a must-see cultural gem.', 'publish', NOW(), NOW());
+
+-- Spaces
+INSERT INTO bravo_spaces (id, title, slug, content, description, status, created_at, updated_at) VALUES
+(110, 'Simien Mountains National Park', 'simien-mountains-national-park', 'Hiking and wildlife in a UNESCO site.', 'A stunning stopover destination with breathtaking landscapes and rare wildlife like the Walia ibex.', 'publish', NOW(), NOW());
+
+-- Cars
+INSERT INTO bravo_cars (id, title, slug, content, description, status, created_at, updated_at) VALUES
+(32, 'Bole Airport Transfer', 'bole-airport-transfer', 'Reliable shuttle service to/from Bole Airport.', 'Convenient transport for stopovers, ensuring quick and safe travel to Addis Ababa hotels.', 'publish', NOW(), NOW());
 # Usage
 Start the Backend (main application)
 python main.py
