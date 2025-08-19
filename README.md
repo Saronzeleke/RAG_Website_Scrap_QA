@@ -63,13 +63,8 @@ fastapi, uvicorn, aiomysql, other dependencies in requirements.txt
 
 
 Database: visitethiopia schema (from visitethiopia(13).sql)
-Installation
-Prerequisites
-
-Python 3.7+
-
-Recommended: use a virtual environment.
-
+# Installation
+Clone Repository:
 Steps
 
 # Clone the repository:
