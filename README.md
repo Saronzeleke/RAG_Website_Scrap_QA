@@ -181,6 +181,7 @@ Application ready
 # Test Queries (PowerShell):
 
 Hotels:
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/ask" -Method Post -ContentType "application/json" -Body '{"question": "List top hotels in Addis Ababa"}'
 
 # File Structure
 RAG_Website_Scrap_QA/
@@ -209,8 +210,11 @@ MIT License
 
 # Contributing
 
-Fork the repository, make your changes, and submit a pull request.
+**1** Fork the repository, make your changes, and submit a pull request.
+**2** Add Data: Insert more records (e.g., Axum tours) with visitethiopia.et-inspired descriptions.
 
+**3** Optimize Scraping: Enhance WebScraper class for pagination or dynamic content (see Aug 11, 2025 conversation).
+**4** Improve RAG: Adjust retrival.py for better query ranking 
 # Contact
-
 GitHub - Saronzeleke
+E-mail - sharonkuye369@gmail.com
