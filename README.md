@@ -79,7 +79,9 @@ python -m venv .venv
 # 3 Install dependencies:
 pip install -r requirements.txt
 pip install httpx==0.27.2
-
+# 4 Set Up Redis:
+docker run -d -p 6379:6379 redis
+redis-cli ping  # Expect: PONG
 # Usage
 Start the Backend (main application)
 python main.py
