@@ -85,9 +85,11 @@ redis-cli ping  # Expect: PONG
 # 5 Set Up MySQL:
 **Install MySQL 8.0.43 and log in**:
 mysql -u root -p
-**Create and import database**:
+**Create database**:
 CREATE DATABASE visitethiopia;
 EXIT;
+**Import database**:
+mysql -u root -p visitethiopia < visitethiopia(13).sql
 # Usage
 Start the Backend (main application)
 python main.py
