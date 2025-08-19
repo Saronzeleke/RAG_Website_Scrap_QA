@@ -100,6 +100,35 @@ Fix: Added description columns with FULLTEXT indexes to bravo_hotels, bravo_even
 
 
 SQL:
+USE visitethiopia;
+
+ALTER TABLE bravo_hotels ADD description TEXT, ADD FULLTEXT(description);
+ALTER TABLE bravo_events ADD description TEXT, ADD FULLTEXT(description);
+ALTER TABLE bravo_boats ADD description TEXT, ADD FULLTEXT(description);
+ALTER TABLE bravo_spaces ADD description TEXT, ADD FULLTEXT(description);
+ALTER TABLE bravo_cars ADD description TEXT, ADD FULLTEXT(description);
+
+-- Fix invalid datetimes in bravo_tours
+SET SESSION sql_mode = 'ALLOW_INVALID_DATES';
+UPDATE bravo_tours 
+SET 
+    start_date = NULL,
+    end_date = NULL,
+    publish_date = NULL,
+    last_booking_date = NULL,
+    created_at = NULL,
+    updated_at = NULL,
+    deleted_at = NULL
+WHERE 
+    start_date = '0000-00-00 00:00:00' OR 
+    end_date = '0000-00-00 00:00:00' OR 
+    publish_date = '0000-00-00 00:00:00' OR 
+    last_booking_date = '0000-00-00 00:00:00' OR 
+    created_at = '0000-00-00 00:00:00' OR 
+    updated_at = '0000-00-00 00:00:00' OR 
+    deleted_at = '0000-00-00 00:00:00';
+SET SESSION sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE';
+ALTER TABLE bravo_tours ADD description TEXT, ADD FULLTEXT(description);
 # Usage
 Start the Backend (main application)
 python main.py
