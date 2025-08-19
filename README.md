@@ -129,6 +129,11 @@ WHERE
     deleted_at = '0000-00-00 00:00:00';
 SET SESSION sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE';
 ALTER TABLE bravo_tours ADD description TEXT, ADD FULLTEXT(description);
+**Data Population**
+
+Issue: INSERT statements failed due to missing slug (ERROR 1364) and description in bravo_tours (ERROR 1054).
+Fix: Added 8 rows with slug and visitethiopia.et-inspired descriptions.
+SQL:
 # Usage
 Start the Backend (main application)
 python main.py
