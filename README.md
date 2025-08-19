@@ -83,7 +83,11 @@ pip install httpx==0.27.2
 docker run -d -p 6379:6379 redis
 redis-cli ping  # Expect: PONG
 # 5 Set Up MySQL:
-
+**Install MySQL 8.0.43 and log in**:
+mysql -u root -p
+**Create and import database**:
+CREATE DATABASE visitethiopia;
+EXIT;
 # Usage
 Start the Backend (main application)
 python main.py
