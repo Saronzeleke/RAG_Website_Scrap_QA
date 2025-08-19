@@ -21,7 +21,7 @@ import os
 import re
 from setting import settings
 from db_manager import DatabaseManager, query_all_db_content, query_db_content
-from retrival import RetrievalSystem, hybrid_retrieval
+from retrieval import RetrievalSystem, hybrid_retrieval
 from urllib.robotparser import RobotFileParser as BaseRobotParser
 import xml.etree.ElementTree as ET  
 
