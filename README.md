@@ -82,6 +82,8 @@ pip install httpx==0.27.2
 # 4 Set Up Redis:
 docker run -d -p 6379:6379 redis
 redis-cli ping  # Expect: PONG
+# 5 Set Up MySQL:
+
 # Usage
 Start the Backend (main application)
 python main.py
