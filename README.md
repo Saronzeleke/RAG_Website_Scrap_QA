@@ -90,6 +90,16 @@ CREATE DATABASE visitethiopia;
 EXIT;
 **Import database**:
 mysql -u root -p visitethiopia < visitethiopia(13).sql
+**Database Configuration**
+
+The visitethiopia database (109 tables) required fixes for missing description columns, slug values, and invalid datetime values (0000-00-00 00:00:00) to load ~223 records.
+Schema Fixes
+Issue: Missing description columns caused ERROR 1054: Unknown column 'description'. Only ~21 records loaded (from bravo_airport).
+Fix: Added description columns with FULLTEXT indexes to bravo_hotels, bravo_events, bravo_boats, bravo_tours, bravo_spaces, and bravo_cars.
+
+
+
+SQL:
 # Usage
 Start the Backend (main application)
 python main.py
