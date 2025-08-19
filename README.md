@@ -161,6 +161,16 @@ INSERT INTO bravo_spaces (id, title, slug, content, description, status, created
 -- Cars
 INSERT INTO bravo_cars (id, title, slug, content, description, status, created_at, updated_at) VALUES
 (32, 'Bole Airport Transfer', 'bole-airport-transfer', 'Reliable shuttle service to/from Bole Airport.', 'Convenient transport for stopovers, ensuring quick and safe travel to Addis Ababa hotels.', 'publish', NOW(), NOW());
+
+**Data Summary**:
+8 new rows (2 hotels, 2 events, 1 boat, 1 tour, 1 space, 1 car)
+Total records: ~223 (~20 bravo_airport + ~203 others).
+Descriptions align with visitethiopia.et (e.g., Bole Airport hotels, Lalibela UNESCO sites).
+
+# Usage
+Start Server:
+.venv\Scripts\Activate.ps1
+uvicorn main:app --reload
 # Usage
 Start the Backend (main application)
 python main.py
