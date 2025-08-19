@@ -1,4 +1,3 @@
-
 import aiomysql
 import redis.asyncio as redis
 import json
@@ -34,10 +33,6 @@ class DatabaseManager:
             logger.info("MySQL connection pool closed")
 
 async def query_all_db_content(pool: aiomysql.Pool, last_extraction: datetime = None) -> list:
-    """
-    Pulls published rows from the primary content tables and returns a list of dicts:
-    {id, title, content, source, updated_at}
-    """
     tables = [
         ("bravo_boats", "title", "content"),
         ("bravo_airport", "name", "description"),
@@ -54,8 +49,10 @@ async def query_all_db_content(pool: aiomysql.Pool, last_extraction: datetime = 
             for table, title_col, content_col in tables:
                 try:
                     params = []
+                    # Include description if it exists in the table
                     query = f"""
-                        SELECT id, {title_col} AS title, {content_col} AS content, updated_at
+                        SELECT id, {title_col} AS title, {content_col} AS content,
+                               COALESCE(description, '') AS description, updated_at
                         FROM {table}
                         WHERE status = 'publish'
                     """
@@ -66,14 +63,13 @@ async def query_all_db_content(pool: aiomysql.Pool, last_extraction: datetime = 
                     rows = await cursor.fetchall()
                     for row in rows:
                         updated = row.get("updated_at") or row.get("created_at") or datetime.now()
-                        if isinstance(updated, (str,)):
-                            updated_iso = updated
-                        else:
-                            updated_iso = updated.isoformat()
+                        updated_iso = updated if isinstance(updated, str) else updated.isoformat()
+                        # Combine content and description for richer context
+                        combined_content = f"{row.get('content', '')} {row.get('description', '')}".strip()
                         results.append({
                             "id": row["id"],
-                            "title": row.get("title") or "",
-                            "content": row.get("content") or "",
+                            "title": row.get("title", ""),
+                            "content": combined_content,
                             "source": table,
                             "updated_at": updated_iso
                         })
@@ -83,11 +79,6 @@ async def query_all_db_content(pool: aiomysql.Pool, last_extraction: datetime = 
     return results
 
 async def query_db_content(pool: aiomysql.Pool, query: str, redis_client: redis.Redis = None) -> list:
-    """
-    Search structured DB content for 'query'.
-    Attempts fulltext then falls back to LIKE for safety.
-    Caches in redis if available.
-    """
     cache_key = f"db_query:{query}"
     results = []
     if redis_client:
@@ -112,38 +103,40 @@ async def query_db_content(pool: aiomysql.Pool, query: str, redis_client: redis.
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             for table, title_col, content_col in tables:
                 try:
-                    # First attempt: fulltext boolean search (if indexes exist)
                     sql_fulltext = f"""
-                        SELECT id, {title_col} AS title, {content_col} AS content, updated_at
+                        SELECT id, {title_col} AS title, {content_col} AS content,
+                               COALESCE(description, '') AS description, updated_at
                         FROM {table}
                         WHERE status = 'publish'
-                        AND MATCH({title_col}, {content_col}) AGAINST (%s IN BOOLEAN MODE)
+                        AND MATCH({title_col}, {content_col}, description) AGAINST (%s IN BOOLEAN MODE)
                     """
                     try:
                         await cursor.execute(sql_fulltext, (query,))
                         rows = await cursor.fetchall()
                     except Exception:
-                        # If fulltext fails (no index), fallback to LIKE
                         rows = []
 
                     if not rows:
                         like_q = f"%{query.replace('%','').replace('_','')}%"
                         like_sql = f"""
-                            SELECT id, {title_col} AS title, {content_col} AS content, updated_at
+                            SELECT id, {title_col} AS title, {content_col} AS content,
+                                   COALESCE(description, '') AS description, updated_at
                             FROM {table}
                             WHERE status = 'publish'
-                            AND ({title_col} LIKE %s OR {content_col} LIKE %s)
+                            AND ({title_col} LIKE %s OR {content_col} LIKE %s OR description LIKE %s)
                         """
-                        await cursor.execute(like_sql, (like_q, like_q))
+                        await cursor.execute(like_sql, (like_q, like_q, like_q))
                         rows = await cursor.fetchall()
 
                     for row in rows:
                         updated = row.get("updated_at") or row.get("created_at") or datetime.now()
-                        updated_iso = updated.isoformat() if not isinstance(updated, str) else updated
+                        updated_iso = updated if isinstance(updated, str) else updated.isoformat()
+                        # Combine content and description
+                        combined_content = f"{row.get('content', '')} {row.get('description', '')}".strip()
                         results.append({
                             "id": row["id"],
-                            "title": row.get("title") or "",
-                            "content": row.get("content") or "",
+                            "title": row.get("title", ""),
+                            "content": combined_content,
                             "source": table,
                             "updated_at": updated_iso
                         })
@@ -158,4 +151,3 @@ async def query_db_content(pool: aiomysql.Pool, query: str, redis_client: redis.
             logger.error(f"Redis setex error: {e}")
 
     return results
-
