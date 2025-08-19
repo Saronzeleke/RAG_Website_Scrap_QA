@@ -1,6 +1,4 @@
 # RAG_Website_Scrap_QA
-RAG_Website_Scrap_QA
-Overview
 
 RAG_Website_Scrap_QA is a Python-based application that provides question-answering capabilities from web-scraped content using a Retrieval-Augmented Generation (RAG) approach.
 It combines document retrieval with generative models to answer user queries accurately and contextually.
