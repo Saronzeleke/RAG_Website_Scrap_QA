@@ -18,7 +18,7 @@ import re
 import time
 from datetime import datetime, timedelta
 from db_manager import DBManager
-from retrival import Retriever
+from retrieval import Retriever
 from setting import settings
 import aiomysql
 import warnings

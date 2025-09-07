@@ -13,3 +13,5 @@ webdriver_manager
 fastapi
 aiohttp
 uvicorn
+nltk
+fastapi_limiter
