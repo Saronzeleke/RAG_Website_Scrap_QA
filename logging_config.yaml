@@ -1,0 +1,27 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+  json:
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    format: "%(asctime)s %(levelname)s %(name)s %(message)s"
+
+handlers:
+  file:
+    class: concurrent_log_handler.ConcurrentRotatingFileHandler
+    formatter: json
+    filename: visitethiopia_qa.log
+    maxBytes: 10485760  
+    backupCount: 7
+    
+
+  console:
+    class: logging.StreamHandler
+    formatter: json
+    stream: ext://sys.stdout
+
+loggers:
+  "":
+    handlers: [file, console]
+    level: INFO
+    propagate: False
