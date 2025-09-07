@@ -15,3 +15,4 @@ aiohttp
 uvicorn
 nltk
 fastapi_limiter
+spellchecker
