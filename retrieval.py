@@ -1,203 +1,202 @@
-import chromadb
+from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
-from sentence_transformers import SentenceTransformer, CrossEncoder  
-from setting import settings
-import logging
-import numpy as np
 from typing import List, Dict
-import re
+import logging
+from chromadb import Client, Settings
+from chromadb.utils import embedding_functions
+import nltk
+import hashlib
+nltk.download('punkt', quiet=True)
 
-logger = logging.getLogger(__name__)
-
-class RetrievalSystem:
-    def __init__(self):
-        self.client = chromadb.Client()
-        try:
-            self.collection = self.client.get_collection("visitethiopia_docs")
-        except Exception:
-            self.collection = self.client.create_collection("visitethiopia_docs")
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        self.cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2") if settings.use_reranking else None  # Init cross-encoder
-        self.bm25 = None
-        self.documents = []
-
-    def clear(self):
-        try:
-            self.client.delete_collection("visitethiopia_docs")
-        except Exception:
-            pass
-        self.__init__()
-
-    def add_documents(self, documents: list):
-        try:
-            if not documents:
-                return
-            filtered_docs = [doc for doc in documents if doc.get("content")]
-            if not filtered_docs:
-                return
-            texts = [doc["content"] for doc in filtered_docs]
-            embeddings = self.model.encode(texts, show_progress_bar=False)
-            self.bm25 = BM25Okapi([t.split() for t in texts])
-            
-            start_idx = len(self.documents)
-            ids = []
-            docs_list = []  
-            embs = []
-            metas = []
-            
-            for i, doc in enumerate(filtered_docs):
-                idx = start_idx + i
-                chroma_id = f"idx_{idx}"
-                ids.append(chroma_id)
-                docs_list.append(doc["content"])
-                embs.append(embeddings[i].tolist())
-                meta = {
-                    "doc_idx": idx,
-                    "source": doc.get("source"),
-                    "title": doc.get("title", ""),
-                    "updated_at": doc.get("updated_at", "")
-                }
-                metas.append(meta)
-                self.documents.append(doc)
-            
-            self.collection.add(
-                ids=ids,
-                documents=docs_list,
-                embeddings=embs,
-                metadatas=metas
-            )
-            logger.info(f"Added {len(ids)} docs to Chroma (total docs={len(self.documents)})")
-        except Exception as e:
-            logger.error(f"Error adding documents to retrieval: {e}")
-
-def _chunk_text(text: str) -> List[str]:
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-    chunks = []
-    current_chunk = []
-    current_length = 0
-    
-    for sentence in sentences:
-        sentence_length = len(sentence.split())
-        if current_length + sentence_length > settings.chunk_size:
-            if current_chunk:
-                chunks.append(' '.join(current_chunk))
-                current_chunk = []
-                current_length = 0
-        current_chunk.append(sentence)
-        current_length += sentence_length
-    
-    if current_chunk:
-        chunks.append(' '.join(current_chunk))
-    
-    return chunks
-
-def chunk_documents(documents: list) -> list:
-    chunks = []
-    for orig_idx, doc in enumerate(documents):
-        content = doc.get("content", {})
-        if isinstance(content, dict):
-            text_chunks = _chunk_text(content.get("main_text", ""))
-            for i, chunk in enumerate(text_chunks):
-                chunks.append({
-                    "orig_doc_idx": orig_idx,
-                    "chunk_index": i,
-                    "id": f"{orig_idx}_text_{i}",
-                    "title": doc.get("title", ""),
-                    "content": chunk,
-                    "source": doc.get("source", ""),
-                    "metadata": {
-                        "type": "main_text",
-                        "headings": content.get("metadata", {}).get("headings", [])[:3]
-                    }
-                })
-            for table in content.get("metadata", {}).get("tables", []):
-                table_chunk = {
-                    "orig_doc_idx": orig_idx,
-                    "chunk_index": len(chunks),
-                    "id": f"{orig_idx}_table_{len(chunks)}",
-                    "title": f"Table: {table.get('caption', '')}",
-                    "content": "\n".join(["|".join(row) for row in table.get("rows", [])]),
-                    "source": doc.get("source", ""),
-                    "metadata": {
-                        "type": "table",
-                        "caption": table.get("caption", "")
-                    }
-                }
-                chunks.append(table_chunk)
-        else:
-            text_chunks = _chunk_text(str(content))
-            for i, chunk in enumerate(text_chunks):
-                chunks.append({
-                    "orig_doc_idx": orig_idx,
-                    "chunk_index": i,
-                    "id": f"{orig_idx}_text_{i}",
-                    "title": doc.get("title", ""),
-                    "content": chunk,
-                    "source": doc.get("source", ""),
-                    "metadata": {"type": "plain_text"}
-                })
-    return chunks
-
-async def _expand_query(query: str) -> List[str]:
-    expansions = [query]
-    if "hotel" in query.lower():
-        expansions.extend([query + " accommodation", query + " lodging"])
-    if "tour" in query.lower():
-        expansions.extend([query + " package", query + " travel"])
-    seen = set()
-    return [x for x in expansions if not (x in seen or seen.add(x))]
-
-async def _rerank_with_cross_encoder(query: str, results: List[Dict], cross_encoder) -> List[Dict]:
-    if not cross_encoder or len(results) < 2:
-        return results
-    try:
-        pairs = [(query, doc['content'][:512]) for doc in results]
-        scores = cross_encoder.predict(pairs)
-        for doc, score in zip(results, scores):
-            doc['score'] = float(score)
-        return sorted(results, key=lambda x: x['score'], reverse=True)
-    except Exception as e:
-        logger.error(f"Reranking failed: {str(e)}")
-        return results
-
-async def hybrid_retrieval(query: str, retrieval: RetrievalSystem, k: int = 5) -> list:
-    try:
-        if not retrieval or not retrieval.documents:
-            return []
-        expanded_queries = await _expand_query(query)
-        bm25_scores = []
-        for q in expanded_queries:
-            scores = retrieval.bm25.get_scores(q.split()) if retrieval.bm25 else np.zeros(len(retrieval.documents))
-            bm25_scores.append(scores)
-        bm25_combined = np.max(bm25_scores, axis=0)
+class Retriever:
+    def __init__(self, embedding_model: str, cross_encoder_model: str, 
+                 chunk_size: int, chunk_overlap: int):
+        self.embedding_model = SentenceTransformer(embedding_model)
+        self.cross_encoder = CrossEncoder(cross_encoder_model)
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
         
-        query_embeddings = retrieval.model.encode(expanded_queries)
-        chroma_results = retrieval.collection.query(
-            query_embeddings=[e.tolist() for e in query_embeddings],
-            n_results=k*2
+        self.client = Client(Settings(persist_directory="./chroma_db", anonymized_telemetry=False))
+        self.collection = self.client.get_or_create_collection(
+            name="visitethiopia",
+            embedding_function=embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=embedding_model
+            )
         )
         
-        results = []
-        seen_idxs = set()
-        for ids_row, dists_row, metas_row in zip(chroma_results["ids"], chroma_results["distances"], chroma_results["metadatas"]):
-            for id_str, dist, meta in zip(ids_row, dists_row, metas_row):
-                doc_idx = meta.get("doc_idx")
-                if doc_idx is None or doc_idx in seen_idxs:
-                    continue
-                similarity = 1.0 - float(dist)
-                bm25_score = float(bm25_combined[doc_idx]) if doc_idx < len(bm25_combined) else 0.0
-                denom = float(np.max(bm25_combined)) if np.any(bm25_combined) else 1.0
-                positional_boost = 1.0 - (doc_idx / len(retrieval.documents)) * 0.2
-                combined_score = (0.5 * similarity + 0.3 * (bm25_score / denom) + 0.2 * positional_boost)
-                doc = dict(retrieval.documents[doc_idx])
-                doc["score"] = combined_score
-                results.append(doc)
-                seen_idxs.add(doc_idx)
+        # BM25 on chunks
+        self.bm25_corpus = [] 
+        self.bm25 = None
         
-        if settings.use_reranking and len(results) > 1:
-            results = await _rerank_with_cross_encoder(query, results, retrieval.cross_encoder)
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"Retriever initialized with {embedding_model} and {cross_encoder_model}")
+
+    def _chunk_text(self, text: str) -> List[str]:
+        """Split text into overlapping chunks using sentence boundaries"""
+        if not text or not text.strip():
+            return []
+            
+        sentences = nltk.sent_tokenize(text)
+        chunks = []
+        current_chunk = []
+        current_length = 0
         
-        return sorted(results, key=lambda x: x["score"], reverse=True)[:k]
-    except Exception as e:
-        logger.error(f"Error in hybrid_retrieval: {e}")
-        return []
+        for sentence in sentences:
+            words = sentence.split()
+            sentence_length = len(words)
+            
+            if current_length + sentence_length > self.chunk_size and current_chunk:
+                chunks.append(' '.join(current_chunk))
+                overlap_start = max(0, len(current_chunk) - self.chunk_overlap)
+                current_chunk = current_chunk[overlap_start:]
+                current_length = len(current_chunk)
+            
+            current_chunk.extend(words)
+            current_length += sentence_length
+        
+        if current_chunk:
+            chunks.append(' '.join(current_chunk))
+            
+        return chunks
+
+    def add_documents(self, documents: List[Dict]):
+        """Add or update documents in both vector store and BM25 index"""
+        if not documents:
+            return
+            
+        # First, remove existing versions
+        doc_ids = [doc['id'] for doc in documents]
+        self.remove_documents(doc_ids)
+            
+        texts = []
+        metadatas = []
+        ids = []
+        new_bm25_chunks = []
+        
+        for doc in documents:
+            content = doc.get('content', '') or ''
+            if not content.strip():
+                continue
+                
+            chunks = self._chunk_text(content)
+            for i, chunk in enumerate(chunks):
+                chunk_hash = hashlib.md5(chunk.encode()).hexdigest()[:8]
+                chunk_id = f"{doc['id']}_{i}_{chunk_hash}"
+                texts.append(chunk)
+                metadatas.append({
+                    'id': doc['id'],
+                    'table_name': doc.get('table_name', ''),
+                    'title': doc.get('title', ''),
+                    'url': doc.get('url', ''),
+                    'chunk_index': i,
+                    'original_doc_id': doc['id']
+                })
+                ids.append(chunk_id)
+                new_bm25_chunks.append(chunk)
+        
+        if texts:
+            # Add to vector store
+            self.collection.add(
+                documents=texts,
+                metadatas=metadatas,
+                ids=ids
+            )
+            
+            # Update BM25
+            self.bm25_corpus.extend(new_bm25_chunks)
+            tokenized_corpus = [doc.split() for doc in self.bm25_corpus]
+            self.bm25 = BM25Okapi(tokenized_corpus)
+            
+            self.logger.info(f"Added/Updated {len(texts)} chunks from {len(documents)} documents")
+
+    def remove_documents(self, doc_ids: List[str]):
+        """Remove documents by their original IDs"""
+        if not doc_ids:
+            return
+            
+        records = self.collection.get()
+        ids_to_remove = [
+            id_ for id_, metadata in zip(records['ids'], records['metadatas'])
+            if metadata.get('original_doc_id') in doc_ids
+        ]
+        
+        if ids_to_remove:
+            self.collection.delete(ids=ids_to_remove)
+            
+            # Rebuild BM25 from remaining
+            remaining_records = self.collection.get()
+            self.bm25_corpus = remaining_records['documents']
+            tokenized_corpus = [doc.split() for doc in self.bm25_corpus]
+            self.bm25 = BM25Okapi(tokenized_corpus) if tokenized_corpus else None
+            
+            self.logger.info(f"Removed {len(ids_to_remove)} chunks for {len(doc_ids)} documents")
+
+    def retrieve(self, query: str, top_k: int = 5, min_score: float = 0.18, 
+                semantic_weight: float = 0.5, bm25_weight: float = 0.3, 
+                positional_weight: float = 0.2) -> List[Dict]:
+        """Hybrid retrieval with semantic + BM25 + re-ranking"""
+        
+        # 1. Semantic Search
+        query_embedding = self.embedding_model.encode(query).tolist()
+        semantic_results = self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k * 3  
+        )
+        
+        semantic_docs = semantic_results['metadatas'][0]
+        semantic_scores = [1 - dist for dist in semantic_results['distances'][0]]  
+        semantic_ids = semantic_results['ids'][0]
+        
+        # 2. BM25 Search (if corpus exists)
+        bm25_scores = []
+        if self.bm25 and self.bm25_corpus:
+            tokenized_query = query.split()
+            bm25_scores = self.bm25.get_scores(tokenized_query)
+            
+            # Map BM25 scores to the same documents as semantic search
+            bm25_mapped_scores = []
+            for id_ in semantic_ids:
+                try:
+                    idx = self.bm25_corpus.index(self.collection.get(ids=[id_])['documents'][0])
+                    bm25_mapped_scores.append(bm25_scores[idx])
+                except (ValueError, IndexError):
+                    bm25_mapped_scores.append(0)
+        else:
+            bm25_mapped_scores = [0] * len(semantic_ids)
+        
+        # 3. Combine scores
+        combined_results = []
+        for i, (doc, semantic_score, bm25_score, id_) in enumerate(
+            zip(semantic_docs, semantic_scores, bm25_mapped_scores, semantic_ids)):
+            
+            positional_score = 1 / (i + 1)  
+            final_score = (semantic_weight * semantic_score + 
+                         bm25_weight * (bm25_score / max(bm25_mapped_scores + [1]) if bm25_mapped_scores else 0) +
+                         positional_weight * positional_score)
+            
+            if final_score >= min_score:
+                combined_results.append({
+                    'metadata': doc,
+                    'score': final_score,
+                    'id': id_,
+                    'content': self.collection.get(ids=[id_])['documents'][0]
+                })
+        
+        # 4. Re-rank with cross-encoder
+        if combined_results:
+            pairs = [(query, f"{doc['metadata']['title']} {doc['content']}") 
+                    for doc in combined_results]
+            
+            rerank_scores = self.cross_encoder.predict(pairs)
+            
+            for doc, rerank_score in zip(combined_results, rerank_scores):
+                doc['rerank_score'] = rerank_score
+                doc['final_score'] = doc['score'] * 0.3 + rerank_score * 0.7  
+            
+            combined_results.sort(key=lambda x: x['final_score'], reverse=True)
+        
+        return combined_results[:top_k]
+
+    def get_document_count(self) -> int:
+        """Get total number of chunks in the retriever"""
+        return len(self.bm25_corpus) if self.bm25_corpus else 0
