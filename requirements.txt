@@ -17,3 +17,4 @@ nltk
 fastapi_limiter
 pyspellchecker
 python-json-logger
+concurrent_log_handler
