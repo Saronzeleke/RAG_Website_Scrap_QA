@@ -15,4 +15,5 @@ aiohttp
 uvicorn
 nltk
 fastapi_limiter
-spellchecker
+pyspellchecker
+python-json-logger
